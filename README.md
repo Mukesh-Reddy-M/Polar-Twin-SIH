@@ -61,8 +61,8 @@ Every record must include a provenance value such as `simulated`, `public-derive
 
 ## Team
 
-- Team name: TBD
-- Team ID: TBD
+- Team name: Ctrl_Alt_Defeat
+- Team ID: 148418
 - Problem statement: SIH 2026 PS 26060
 
 ## License
