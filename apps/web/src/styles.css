@@ -119,3 +119,7 @@ h1 { margin-bottom: 7px; color: #16334b; font-size: clamp(28px, 3.4vw, 38px); li
   .section-heading { align-items: start; flex-direction: column; gap: 10px; }
   .scenario-actions { flex-direction: column; }
 }
+.station-select { min-width: 140px; padding: 8px 30px 8px 11px; border: 1px solid #c2d8df66; border-radius: 7px; color: #f1f7f8; background: #ffffff14; font: inherit; font-size: 12px; font-weight: 600; cursor: pointer; }
+.station-select:focus { outline: 2px solid #8fd0cf; outline-offset: 2px; }
+.station-select option { color: #19394d; background: #fff; }
+.station-select:disabled { cursor: wait; opacity: .7; }

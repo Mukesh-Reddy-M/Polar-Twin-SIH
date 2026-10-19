@@ -1,6 +1,6 @@
 # Polar Twin API
 
-Local FastAPI service for the first prototype. It serves a simulated station reading and supports the storm and reset scenarios.
+Local FastAPI service for the prototype. It serves separate simulated readings for Maitri and Bharati and supports station-specific storm and reset scenarios.
 
 ```bash
 cd services/api
@@ -15,8 +15,10 @@ The API starts at `http://localhost:8000`. Interactive API documentation is at `
 Endpoints:
 
 - `GET /api/health`
-- `GET /api/station/latest`
-- `POST /api/scenario/storm`
-- `POST /api/scenario/reset`
+- `GET /api/stations`
+- `GET /api/station/latest?station_id=maitri-demo`
+- `GET /api/station/latest?station_id=bharati-demo`
+- `POST /api/scenario/storm?station_id=bharati-demo`
+- `POST /api/scenario/reset?station_id=bharati-demo`
 
-The database is created at `services/api/data/prototype.sqlite3` when the service runs. The readings and alert thresholds are synthetic examples, not verified station data or operational guidance.
+The database is created at `services/api/data/prototype.sqlite3` when the service runs. Each station keeps its latest scenario separately. Bharati values are synthetic examples chosen for the demo; they are not verified station measurements, and alert thresholds are not operational guidance.

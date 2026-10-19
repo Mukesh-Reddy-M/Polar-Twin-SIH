@@ -12,7 +12,7 @@ The first version is complete when the team can start it locally, trigger the sc
 
 Build only:
 
-- One station profile at first; add the second station after the flow works.
+- Selectable Maitri and Bharati demo profiles, each with its own normal and storm values.
 - A simple web dashboard with temperature/weather, power, fuel, alert, and data-source label.
 - A small Python simulator that creates repeatable sample readings.
 - A simple API that gives the dashboard the latest readings and accepts a storm/reset action.
@@ -111,4 +111,4 @@ The values above are illustrative demo values, not verified station measurements
 
 ## Later, after this works
 
-Add Bharati as the second profile, inventory and shipment ETA, offline buffering, role views, reports, and public-weather calibration one at a time. Only consider real sensor feeds after access, source, and data formats are confirmed.
+Add inventory and shipment ETA, offline buffering, role views, reports, and public-weather calibration one at a time. Keep both station profiles visibly synthetic until their values are validated. Only consider real sensor feeds after access, source, and data formats are confirmed.
