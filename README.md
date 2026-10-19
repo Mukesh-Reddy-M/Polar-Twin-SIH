@@ -58,12 +58,25 @@ Implementation setup is not available yet. Once the first app is added, this sec
 ## Data integrity
 
 Every record must include a provenance value such as `simulated`, `public-derived`, `manual`, or `sensor`. Until validated station data and authorization exist, use only simulated/public-derived values. Keep assumptions and illustrative thresholds visible in the UI and documentation.
+## Team Details
+**Team:** Ctrl_Alt_Defeat  
+**SIH Team ID:** 148418  
+**Team leader:** Moola Mukesh Reddy  
+**Institution:** C R Rao Advanced Institute of Mathematics, Statistics and Computer Science  
+**Problem statement:** SIH 2026 PS 26060
 
-## Team
+## Confirmed members
 
-- Team name: Ctrl_Alt_Defeat
-- Team ID: 148418
-- Problem statement: SIH 2026 PS 26060
+| Name | SIH role |
+|---|---|
+| Moola Mukesh Reddy | Team Leader |
+| Paktur Tejas Chandra Singh | Team Member |
+| Polumahanthi Anish Srinivas | Team Member |
+| Veda Samhitha Vutla | Team Member |
+| Samanvitha Bandaru | Team Member |
+| Akshaya Nalamasu | Team Member |
+
+Workstream ownership should be agreed by the team based on each member's skills and availability. Personal contact details are intentionally not stored in this public-project documentation.
 
 ## License
 
