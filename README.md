@@ -1,0 +1,70 @@
+# Polar Twin
+
+A bandwidth-aware digital twin and remote operations platform concept for India's Antarctic research stations, Maitri and Bharati.
+
+**SIH 2026 · Problem Statement 26060 · Theme: Smart Automation**
+
+> Current status: project concept and proposed architecture. The repository is the starting point for the prototype; it does not yet contain a working application. Prototype readings must be labeled as simulated or public-derived and must never be presented as live station telemetry.
+
+## Problem
+Remote station teams need a shared view of infrastructure, energy, logistics, and environmental conditions, even when connectivity is slow or unavailable. Separate dashboards do not show how an environmental event can affect heating demand, fuel use, and inventory risk together.
+
+## Proposed solution
+Polar Twin models each station's operational state, connects related signals, and supports explainable alerts and supply planning. A simulator and future sensors use the same ingestion contract. An edge agent buffers and compresses data for later synchronization.
+
+## MVP
+
+- Station profiles for Maitri and Bharati, with a 2D station view.
+- Simulated environment, energy, infrastructure, and inventory readings with clear provenance labels.
+- Offline edge-agent simulation: buffer, compress, batch, and synchronize.
+- Explainable Normal / Warning / Critical alerts with hysteresis and minimum-duration rules.
+- Station health score with a component breakdown and reasons for changes.
+- Requisition, approval, dispatch, and delivery workflow.
+- Stock-out estimate compared with shipment ETA.
+- At least two safe what-if scenarios, such as a generator fault during a storm and a delayed shipment.
+- Role-specific views for Station Leader, Logistics, and Management.
+- CSV/PDF report and an offline demo fallback.
+
+See [the build plan](docs/ROADMAP.md) and [architecture notes](docs/ARCHITECTURE.md).
+
+## Proposed technology
+
+- **Web:** React, Vite, TypeScript, Tailwind CSS, Recharts, Leaflet
+- **API:** choose one for the MVP: Python FastAPI (recommended if the simulator is Python) or Node.js/Express
+- **Simulator:** Python, NumPy, pandas
+- **Storage:** PostgreSQL; add TimescaleDB only if time-series query needs justify it
+- **Updates:** start with polling; add SSE/WebSocket only when the demo needs it
+- **Delivery:** Docker; deploy only after the local demo is stable
+
+The stack is a proposal, not an implementation commitment. Keep the first version small and document any decision that changes it.
+
+## Repository layout
+
+```text
+apps/
+  web/                 # station, logistics, and management interface
+services/
+  api/                 # ingestion and operational API
+  simulator/           # correlated synthetic data and scenario events
+docs/
+  ARCHITECTURE.md
+  ROADMAP.md
+```
+
+## Quick start
+
+Implementation setup is not available yet. Once the first app is added, this section should include exact install, run, test, and demo commands.
+
+## Data integrity
+
+Every record must include a provenance value such as `simulated`, `public-derived`, `manual`, or `sensor`. Until validated station data and authorization exist, use only simulated/public-derived values. Keep assumptions and illustrative thresholds visible in the UI and documentation.
+
+## Team
+
+- Team name: TBD
+- Team ID: TBD
+- Problem statement: SIH 2026 PS 26060
+
+## License
+
+No license has been selected. Add one after the team confirms how the project may be reused.

@@ -1,0 +1,36 @@
+name: Feature
+description: Propose a scoped product or engineering feature
+title: ""
+labels: []
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: User need
+      description: Which user needs this, and what are they trying to do?
+    validations:
+      required: true
+  - type: textarea
+    id: outcome
+    attributes:
+      label: Expected outcome
+      description: What should the user be able to see or do?
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance checks
+      description: List observable checks for completion.
+    validations:
+      required: true
+  - type: dropdown
+    id: provenance
+    attributes:
+      label: Data provenance involved
+      options:
+        - Simulated
+        - Public-derived
+        - Manual
+        - Sensor (approved and verified)
+        - Not applicable

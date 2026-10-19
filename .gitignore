@@ -1,0 +1,29 @@
+# Dependencies
+node_modules/
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+
+# Build output
+dist/
+build/
+coverage/
+
+# Local configuration and secrets
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# Editor and OS files
+.DS_Store
+.idea/
+.vscode/
+
+# Local data and generated artifacts
+*.sqlite3
+*.db
+*.log
+reports/generated/
