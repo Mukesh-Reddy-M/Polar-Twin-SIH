@@ -2,6 +2,8 @@
 node_modules/
 .venv/
 venv/
+.test-deps/
+.test-data/
 __pycache__/
 *.py[cod]
 
