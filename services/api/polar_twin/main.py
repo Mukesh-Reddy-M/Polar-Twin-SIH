@@ -5,6 +5,7 @@ import json
 import os
 import sqlite3
 import zlib
+from contextlib import contextmanager
 from pathlib import Path
 from typing import Literal
 
@@ -54,13 +55,24 @@ def connect() -> sqlite3.Connection:
     return connection
 
 
+@contextmanager
+def database_connection():
+    """Commit successful work and always release the local SQLite file."""
+    connection = connect()
+    try:
+        yield connection
+        connection.commit()
+    finally:
+        connection.close()
+
+
 def validate_station(station_id: str) -> None:
     if station_id not in STATIONS:
         raise HTTPException(status_code=404, detail="Unknown station profile")
 
 
 def save_reading(reading: dict) -> dict:
-    with connect() as connection:
+    with database_connection() as connection:
         connection.execute(
             "INSERT INTO readings(station_id, payload) VALUES (?, ?)",
             (reading["station_id"], json.dumps(reading)),
@@ -70,7 +82,7 @@ def save_reading(reading: dict) -> dict:
 
 def latest_reading(station_id: str) -> dict:
     validate_station(station_id)
-    with connect() as connection:
+    with database_connection() as connection:
         row = connection.execute(
             "SELECT payload FROM readings WHERE station_id = ? ORDER BY id DESC LIMIT 1",
             (station_id,),
@@ -147,7 +159,7 @@ async def sync_queued_telemetry(request: Request) -> dict:
         if not reading.get("observed_at") or not reading.get("provenance"):
             raise HTTPException(status_code=400, detail="Each reading needs observed_at and provenance")
 
-    with connect() as connection:
+    with database_connection() as connection:
         connection.executemany(
             "INSERT INTO readings(station_id, payload) VALUES (?, ?)",
             [(reading["station_id"], json.dumps(reading)) for reading in readings],
