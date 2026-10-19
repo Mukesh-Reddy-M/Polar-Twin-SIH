@@ -1,5 +1,15 @@
 import { useCallback, useEffect, useState } from 'react';
 
+function formatDate(value) {
+  if (!value) return '—';
+  return new Intl.DateTimeFormat(undefined, {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+    timeZone: 'UTC',
+  }).format(new Date(`${value}T00:00:00Z`));
+}
+
 function formatTime(value) {
   if (!value) return 'Waiting for first reading';
   return new Intl.DateTimeFormat(undefined, {
@@ -62,6 +72,8 @@ export default function App() {
   const activeReading = reading?.station_id === stationId ? reading : null;
   const isStorm = activeReading?.scenario === 'storm';
   const alertLevel = activeReading?.alert?.level ?? 'normal';
+  const inventory = activeReading?.inventory;
+  const inventoryAtRisk = inventory?.status === 'risk';
 
   return (
     <main className="page-shell">
@@ -150,6 +162,44 @@ export default function App() {
             <div className="meter"><span className={isStorm ? 'meter-low' : ''} style={{ width: `${activeReading?.energy.fuel_percent ?? 0}%` }} /></div>
             <p className="metric-foot">Simulated station reserve</p>
           </article>
+        </section>
+
+        <section className="shipment-card" aria-label="Fuel shipment outlook">
+          <div className="shipment-heading">
+            <div>
+              <p className="eyebrow">LOGISTICS / FUEL PLANNING</p>
+              <h2>Shipment outlook</h2>
+            </div>
+            <span className="shipment-demo-tag">SIMULATED ESTIMATE</span>
+          </div>
+          <div className="shipment-details">
+            <article className="shipment-date">
+              <span className="shipment-date-icon stock">◷</span>
+              <div>
+                <span className="shipment-label">ESTIMATED STOCK-OUT</span>
+                <strong>{formatDate(inventory?.stockout_date)}</strong>
+                <small>{inventory ? `In ${inventory.stockout_in_days} days` : 'Waiting for reading'}</small>
+              </div>
+            </article>
+            <div className="shipment-arrow" aria-hidden="true">→</div>
+            <article className="shipment-date">
+              <span className="shipment-date-icon arrival">⇢</span>
+              <div>
+                <span className="shipment-label">SHIPMENT ETA</span>
+                <strong>{formatDate(inventory?.shipment_eta_date)}</strong>
+                <small>{inventory ? `In ${inventory.shipment_eta_in_days} days` : 'Waiting for reading'}</small>
+              </div>
+            </article>
+            <div className={`shipment-result ${inventoryAtRisk ? 'risk' : 'safe'}`}>
+              <span className="shipment-result-icon">{inventoryAtRisk ? '!' : '✓'}</span>
+              <div>
+                <span className="shipment-label">DELIVERY CHECK</span>
+                <strong>{inventoryAtRisk ? `${inventory.shortfall_days}-day gap` : `${inventory?.arrival_buffer_days ?? 0}-day buffer`}</strong>
+                <small>{inventoryAtRisk ? 'Fuel may run out before delivery.' : 'Shipment is expected before stock-out.'}</small>
+              </div>
+            </div>
+          </div>
+          <p className="shipment-note">{inventoryAtRisk ? 'Consider reviewing the shipment plan in this demo scenario.' : 'Estimate uses illustrative demo values; verify real inventory and shipment schedules before acting.'}</p>
         </section>
 
         <section className={`alert-card ${alertLevel === 'warning' ? 'alert-warning' : ''}`} aria-live="polite">

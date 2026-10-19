@@ -123,3 +123,35 @@ h1 { margin-bottom: 7px; color: #16334b; font-size: clamp(28px, 3.4vw, 38px); li
 .station-select:focus { outline: 2px solid #8fd0cf; outline-offset: 2px; }
 .station-select option { color: #19394d; background: #fff; }
 .station-select:disabled { cursor: wait; opacity: .7; }
+.shipment-card { margin-top: 16px; padding: 21px 22px 16px; border: 1px solid #e2eaf0; border-radius: 10px; background: #fff; box-shadow: 0 4px 12px #183c5010; }
+.shipment-heading { display: flex; align-items: end; justify-content: space-between; margin-bottom: 17px; }
+.shipment-heading .eyebrow { margin-bottom: 5px; }
+.shipment-heading h2 { margin: 0; color: #18374f; font-size: 18px; letter-spacing: -.35px; }
+.shipment-demo-tag { padding: 6px 8px; border-radius: 5px; color: #528d7c; background: #eef7f3; font-size: 8px; font-weight: 700; letter-spacing: .9px; }
+.shipment-details { display: grid; grid-template-columns: 1fr 28px 1fr minmax(230px, 1.3fr); align-items: center; gap: 15px; }
+.shipment-date { min-height: 74px; display: flex; align-items: center; gap: 11px; }
+.shipment-date-icon, .shipment-result-icon { width: 34px; height: 34px; flex: none; display: grid; place-items: center; border-radius: 9px; font-size: 18px; }
+.shipment-date-icon.stock { color: #b87643; background: #fff2e8; }
+.shipment-date-icon.arrival { color: #4e8b76; background: #e9f6ef; }
+.shipment-date > div, .shipment-result > div { display: flex; flex-direction: column; align-items: start; gap: 3px; }
+.shipment-label { color: #91a1ac; font-size: 8px; font-weight: 700; letter-spacing: 1px; }
+.shipment-date strong, .shipment-result strong { color: #25455c; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; font-size: 15px; }
+.shipment-date small, .shipment-result small { color: #8798a3; font-size: 10px; }
+.shipment-arrow { color: #a7b5bd; font-size: 18px; text-align: center; }
+.shipment-result { min-height: 68px; display: flex; align-items: center; gap: 10px; padding: 10px 12px; border: 1px solid #cde6dc; border-radius: 8px; background: #f3faf6; }
+.shipment-result-icon { width: 27px; height: 27px; border-radius: 50%; color: #388d70; background: #dff2e8; font-size: 14px; font-weight: 700; }
+.shipment-result.risk { border-color: #f0d7b9; background: #fff9f1; }
+.shipment-result.risk .shipment-result-icon { color: #ad6b2e; background: #fbe8cf; }
+.shipment-note { margin: 12px 0 0; color: #92a0a9; font-size: 9px; line-height: 1.5; }
+@media (max-width: 760px) {
+  .shipment-details { grid-template-columns: 1fr 22px 1fr; gap: 8px; }
+  .shipment-result { grid-column: 1 / -1; }
+  .shipment-date { gap: 8px; }
+  .shipment-date strong { font-size: 13px; }
+}
+@media (max-width: 470px) {
+  .shipment-card { padding: 17px 14px 14px; }
+  .shipment-details { grid-template-columns: 1fr; }
+  .shipment-arrow { transform: rotate(90deg); }
+  .shipment-result { grid-column: auto; }
+}

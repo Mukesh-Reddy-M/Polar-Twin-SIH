@@ -21,4 +21,4 @@ Endpoints:
 - `POST /api/scenario/storm?station_id=bharati-demo`
 - `POST /api/scenario/reset?station_id=bharati-demo`
 
-The database is created at `services/api/data/prototype.sqlite3` when the service runs. Each station keeps its latest scenario separately. Bharati values are synthetic examples chosen for the demo; they are not verified station measurements, and alert thresholds are not operational guidance.
+The database is created at `services/api/data/prototype.sqlite3` when the service runs. Each station keeps its latest scenario separately. Responses include an `inventory` estimate with `stockout_date`, `shipment_eta_date`, `status`, and the number of days between stock-out and shipment. Bharati values are synthetic examples chosen for the demo; they are not verified station measurements or delivery schedules, and alert thresholds are not operational guidance.

@@ -4,9 +4,9 @@ This plan aims for a small prototype the team can run on one laptop and show in 
 
 ## What the first prototype should do
 
-Show one station dashboard with simulated readings. When the team triggers a storm scenario, the dashboard should show the weather worsening, heating demand and fuel use increasing, and a clear warning with the reason. Show a label saying the readings are simulated.
+Show selectable Maitri and Bharati demo profiles with simulated readings. When the team triggers a storm scenario, the dashboard shows worsening weather, higher heating demand, lower fuel reserve, an explainable warning, and an estimated stock-out date compared with shipment ETA. Keep the simulated-data label visible.
 
-The first version is complete when the team can start it locally, trigger the scenario, explain what changed, and reset it for another demo.
+The first version is complete when the team can start it locally, switch profiles, trigger and explain the scenario, compare stock-out with delivery, and reset each station for another demo.
 
 ## Keep the first version small
 
@@ -111,4 +111,4 @@ The values above are illustrative demo values, not verified station measurements
 
 ## Later, after this works
 
-Add inventory and shipment ETA, offline buffering, role views, reports, and public-weather calibration one at a time. Keep both station profiles visibly synthetic until their values are validated. Only consider real sensor feeds after access, source, and data formats are confirmed.
+Add offline buffering, role views, reports, and public-weather calibration one at a time. Keep both station profiles visibly synthetic until their values are validated. Only consider real sensor feeds after access, source, and data formats are confirmed.

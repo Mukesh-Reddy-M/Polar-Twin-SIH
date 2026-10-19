@@ -75,7 +75,14 @@ def latest_reading(station_id: str) -> dict:
         ).fetchone()
     if row is None:
         return save_reading(make_reading(station_id))
-    return json.loads(row["payload"])
+
+    reading = json.loads(row["payload"])
+    if "inventory" not in reading:
+        # Add the current inventory estimate to records created by the earlier prototype.
+        return save_reading(
+            make_reading(station_id, storm_active=(reading.get("scenario") == "storm"))
+        )
+    return reading
 
 
 @app.get("/api/health")

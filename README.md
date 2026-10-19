@@ -4,7 +4,7 @@ A bandwidth-aware digital twin and remote operations platform concept for India'
 
 **SIH 2026 · Problem Statement 26060 · Theme: Smart Automation**
 
-> Current status: first local prototype in progress. It includes selectable simulated Maitri and Bharati profiles, station-specific storm/reset scenarios, and a small API. Prototype readings are synthetic examples and must never be presented as live station telemetry.
+> Current status: first local prototype in progress. It includes selectable simulated Maitri and Bharati profiles, station-specific storm/reset scenarios, a fuel stock-out versus shipment ETA outlook, and a small API. Prototype readings are synthetic examples and must never be presented as live station telemetry.
 
 ## Problem
 Remote station teams need a shared view of infrastructure, energy, logistics, and environmental conditions, even when connectivity is slow or unavailable. Separate dashboards do not show how an environmental event can affect heating demand, fuel use, and inventory risk together.
