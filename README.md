@@ -61,8 +61,11 @@ Every record must include a provenance value such as `simulated`, `public-derive
 
 ## Team
 
-- Team name: TBD
-- Team ID: TBD
+- Team name: Ctrl_Alt_Defeat
+- Team ID: 148418
+- Team leader: Moola Mukesh Reddy
+- Institution: C R Rao Advanced Institute of Mathematics, Statistics and Computer Science
+- Team roster: see [docs/TEAM.md](docs/TEAM.md)
 - Problem statement: SIH 2026 PS 26060
 
 ## License

@@ -4,7 +4,7 @@ This plan turns the current proposal into a demoable MVP. The source concept est
 
 ## First decisions (Day 1)
 
-1. Confirm team members, owner for each workstream, and the event deadline.
+1. Assign one owner for each workstream and confirm the event deadline and team availability.
 2. Pick one API stack. Recommended starting choice: FastAPI, because the simulator is Python and can share models and validation.
 3. Agree on the first judge journey: storm → energy/fuel impact → alert → low-bandwidth sync → supply risk → management summary.
 4. Freeze Must / Should / Could scope. Keep 3D visualization, real hardware integrations, and advanced prediction out of the first demo.
