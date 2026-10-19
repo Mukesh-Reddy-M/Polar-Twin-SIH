@@ -25,7 +25,7 @@ Polar Twin models each station's operational state, connects related signals, an
 - Role-specific views for Station Leader, Logistics, and Management.
 - CSV/PDF report and an offline demo fallback.
 
-See [the build plan](docs/ROADMAP.md) and [architecture notes](docs/ARCHITECTURE.md).
+See the [three-person first-prototype plan](docs/PROTOTYPE_PLAN.md), [build plan](docs/ROADMAP.md), and [architecture notes](docs/ARCHITECTURE.md).
 
 ## Proposed technology
 
