@@ -4,7 +4,7 @@
 Public-derived inputs / simulator
               ↓
      Station edge agent
- (buffer → compress → batch)
+ (buffer locally → gzip batch → sync on reconnect)
               ↓
          Ingestion API
  (validate → label provenance)
@@ -19,7 +19,7 @@ Public-derived inputs / simulator
 ## Boundaries
 
 - The simulator and any later sensor adapter use the same ingestion contract.
-- The edge agent can queue data while offline and synchronize in batches after reconnect.
+- The browser-based edge demo stores readings locally while the simulated link is offline, then sends them as a gzip batch on reconnect. The API validates station IDs and required reading metadata before storing the batch.
 - The API rejects invalid units, missing provenance, and out-of-range data rather than silently accepting it.
 - The twin derives state from recorded inputs. Scenarios run on a copy and can be reset.
 - Alerts provide an explanation and source readings; critical actions remain subject to human approval.

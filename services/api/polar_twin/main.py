@@ -1,12 +1,14 @@
 """FastAPI service for the local Polar Twin prototype."""
 
+import gzip
 import json
 import os
 import sqlite3
+import zlib
 from pathlib import Path
 from typing import Literal
 
-from fastapi import FastAPI, HTTPException, Query
+from fastapi import FastAPI, HTTPException, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
 
 from .simulator import STATIONS, make_reading
@@ -19,7 +21,7 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=["http://localhost:5173", "http://127.0.0.1:5173"],
     allow_methods=["GET", "POST"],
-    allow_headers=["Content-Type"],
+    allow_headers=["Content-Type", "Content-Encoding"],
 )
 
 
@@ -112,3 +114,49 @@ def set_scenario(
 ) -> dict:
     validate_station(station_id)
     return save_reading(make_reading(station_id, storm_active=(scenario == "storm")))
+
+
+@app.post("/api/telemetry/sync")
+async def sync_queued_telemetry(request: Request) -> dict:
+    """Accept a buffered edge batch, optionally compressed with gzip."""
+    transmitted = await request.body()
+    if request.headers.get("content-encoding", "").lower() == "gzip":
+        try:
+            payload_bytes = gzip.decompress(transmitted)
+        except (OSError, EOFError, zlib.error) as error:
+            raise HTTPException(status_code=400, detail="Invalid gzip telemetry batch") from error
+    else:
+        payload_bytes = transmitted
+
+    try:
+        payload = json.loads(payload_bytes)
+    except (json.JSONDecodeError, UnicodeDecodeError) as error:
+        raise HTTPException(status_code=400, detail="Telemetry batch must contain JSON") from error
+
+    readings = payload.get("readings") if isinstance(payload, dict) else payload
+    if not isinstance(readings, list) or not readings:
+        raise HTTPException(status_code=400, detail="Telemetry batch must contain at least one reading")
+    if len(readings) > 500:
+        raise HTTPException(status_code=413, detail="Telemetry batch is limited to 500 readings")
+
+    for reading in readings:
+        if not isinstance(reading, dict):
+            raise HTTPException(status_code=400, detail="Each telemetry item must be an object")
+        station_id = reading.get("station_id")
+        validate_station(station_id if isinstance(station_id, str) else "")
+        if not reading.get("observed_at") or not reading.get("provenance"):
+            raise HTTPException(status_code=400, detail="Each reading needs observed_at and provenance")
+
+    with connect() as connection:
+        connection.executemany(
+            "INSERT INTO readings(station_id, payload) VALUES (?, ?)",
+            [(reading["station_id"], json.dumps(reading)) for reading in readings],
+        )
+
+    return {
+        "status": "synced",
+        "accepted_readings": len(readings),
+        "transmitted_bytes": len(transmitted),
+        "uncompressed_bytes": len(payload_bytes),
+        "compression": "gzip" if request.headers.get("content-encoding", "").lower() == "gzip" else "none",
+    }

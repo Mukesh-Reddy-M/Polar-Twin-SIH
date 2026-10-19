@@ -155,3 +155,35 @@ h1 { margin-bottom: 7px; color: #16334b; font-size: clamp(28px, 3.4vw, 38px); li
   .shipment-arrow { transform: rotate(90deg); }
   .shipment-result { grid-column: auto; }
 }
+.edge-card { margin-top: 16px; padding: 20px 22px 14px; border: 1px solid #e1e9ef; border-radius: 10px; background: #fff; box-shadow: 0 4px 12px #183c5010; }
+.edge-heading { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
+.edge-heading .eyebrow { margin-bottom: 5px; }
+.edge-heading h2 { margin: 0; color: #18374f; font-size: 18px; letter-spacing: -.35px; }
+.edge-status { display: inline-flex; align-items: center; gap: 7px; padding: 7px 9px; border-radius: 6px; font-size: 8px; font-weight: 700; letter-spacing: .8px; }
+.edge-status.connected { color: #43876f; background: #eaf6f0; }
+.edge-status.disconnected { color: #a9662d; background: #fff1df; }
+.edge-status-dot { width: 7px; height: 7px; border-radius: 50%; background: #52b48d; }
+.edge-status.disconnected .edge-status-dot { background: #e6a051; }
+.edge-content { display: grid; grid-template-columns: minmax(220px, 1fr) auto auto; align-items: center; gap: 20px; }
+.edge-copy p { margin: 0; color: #586f7e; font-size: 12px; line-height: 1.5; }
+.edge-copy small { display: block; margin-top: 5px; color: #8a9aa4; font-size: 9px; line-height: 1.5; }
+.edge-stats { display: flex; gap: 18px; }
+.edge-stats > div { display: flex; flex-direction: column; gap: 5px; }
+.edge-stats span { color: #93a2ac; font-size: 8px; font-weight: 700; letter-spacing: .8px; }
+.edge-stats strong { color: #25475d; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; font-size: 16px; }
+.button-outage { border-color: #dae5eb; color: #596f7d; background: #f8fafb; }
+.button-outage:not(:disabled):hover { background: #edf3f6; }
+.button-sync { color: #fff; background: #287f6a; box-shadow: 0 3px 8px #287f6a25; }
+.button-sync:not(:disabled):hover { background: #216d5b; transform: translateY(-1px); }
+.edge-note { margin: 12px 0 0; color: #96a3ab; font-size: 9px; line-height: 1.5; }
+@media (max-width: 760px) {
+  .edge-content { grid-template-columns: 1fr auto; gap: 13px; }
+  .edge-copy { grid-column: 1 / -1; }
+  .edge-stats { gap: 12px; }
+}
+@media (max-width: 470px) {
+  .edge-card { padding: 17px 14px 13px; }
+  .edge-content { grid-template-columns: 1fr; }
+  .edge-content > .button { width: 100%; }
+  .edge-heading { align-items: start; gap: 8px; flex-direction: column; }
+}

@@ -4,7 +4,7 @@ A bandwidth-aware digital twin and remote operations platform concept for India'
 
 **SIH 2026 · Problem Statement 26060 · Theme: Smart Automation**
 
-> Current status: first local prototype in progress. It includes selectable simulated Maitri and Bharati profiles, station-specific storm/reset scenarios, a fuel stock-out versus shipment ETA outlook, and a small API. Prototype readings are synthetic examples and must never be presented as live station telemetry.
+> Current status: first local prototype in progress. It includes selectable simulated Maitri and Bharati profiles, station-specific storm/reset scenarios, a fuel stock-out versus shipment ETA outlook, and a local edge-buffer demo that compresses and syncs readings after reconnect. Prototype readings are synthetic examples and must never be presented as live station telemetry.
 
 ## Problem
 Remote station teams need a shared view of infrastructure, energy, logistics, and environmental conditions, even when connectivity is slow or unavailable. Separate dashboards do not show how an environmental event can affect heating demand, fuel use, and inventory risk together.
@@ -73,7 +73,7 @@ npm install
 npm run dev
 ```
 
-Open the local address printed by Vite (normally `http://localhost:5173`). Choose Maitri or Bharati, then **Start storm** to see that station’s simulated values and warning change; choose **Reset to normal** to restore that station’s baseline. The API's interactive page is at `http://localhost:8000/docs`.
+Open the local address printed by Vite (normally `http://localhost:5173`). Choose Maitri or Bharati, then **Start storm** to see that station’s simulated values and warning change; choose **Reset to normal** to restore that station’s baseline. To demo offline sync, choose **Simulate link outage**, wait for a few readings to queue, then choose **Reconnect & sync**. The API's interactive page is at `http://localhost:8000/docs`.
 
 The API creates a local SQLite database under `services/api/data/` the first time it runs. The database file is not intended for Git. See [the API notes](services/api/README.md) if setup fails.
 

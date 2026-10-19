@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
+import { loadQueuedReadings, prepareBatch, saveQueuedReadings } from './edgeQueue.js';
 
 function formatDate(value) {
   if (!value) return '—';
@@ -8,6 +9,11 @@ function formatDate(value) {
     year: 'numeric',
     timeZone: 'UTC',
   }).format(new Date(`${value}T00:00:00Z`));
+}
+
+function formatBytes(value) {
+  if (value < 1024) return `${value} B`;
+  return `${(value / 1024).toFixed(1)} KB`;
 }
 
 function formatTime(value) {
@@ -26,6 +32,11 @@ export default function App() {
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
+  const [edgeLinkOnline, setEdgeLinkOnline] = useState(true);
+  const [queuedReadings, setQueuedReadings] = useState(loadQueuedReadings);
+  const [syncing, setSyncing] = useState(false);
+  const [syncFeedback, setSyncFeedback] = useState('Telemetry sync is active.');
+  const [lastSync, setLastSync] = useState(null);
 
   const refresh = useCallback(async () => {
     try {
@@ -74,6 +85,68 @@ export default function App() {
   const alertLevel = activeReading?.alert?.level ?? 'normal';
   const inventory = activeReading?.inventory;
   const inventoryAtRisk = inventory?.status === 'risk';
+  const queuedBytes = new TextEncoder().encode(JSON.stringify(queuedReadings)).byteLength;
+
+  useEffect(() => {
+    if (edgeLinkOnline || !activeReading) return undefined;
+
+    const interval = window.setInterval(() => {
+      const pending = loadQueuedReadings();
+      if (pending.length >= 500) {
+        setSyncFeedback('The local buffer is full. Reconnect to sync it before collecting more.');
+        return;
+      }
+      const sample = {
+        ...activeReading,
+        observed_at: new Date().toISOString(),
+        edge_sequence: `${stationId}-${Date.now()}`,
+      };
+      const nextQueue = [...pending, sample];
+      saveQueuedReadings(nextQueue);
+      setQueuedReadings(nextQueue);
+      setSyncFeedback('Link is offline. New readings are safely queued on this device.');
+    }, 3000);
+
+    return () => window.clearInterval(interval);
+  }, [activeReading, edgeLinkOnline, stationId]);
+
+  async function reconnectAndSync() {
+    const pending = loadQueuedReadings();
+    setEdgeLinkOnline(true);
+    if (pending.length === 0) {
+      setSyncFeedback('Link is back online. There are no readings waiting to sync.');
+      return;
+    }
+
+    setSyncing(true);
+    setSyncFeedback('Compressing and syncing the queued batch…');
+    try {
+      const batch = await prepareBatch(pending);
+      const headers = { 'Content-Type': 'application/json' };
+      if (batch.compressed) headers['Content-Encoding'] = 'gzip';
+      const response = await fetch('/api/telemetry/sync', {
+        method: 'POST',
+        headers,
+        body: batch.body,
+      });
+      if (!response.ok) throw new Error('Sync request failed.');
+      const result = await response.json();
+      saveQueuedReadings([]);
+      setQueuedReadings([]);
+      setLastSync({
+        accepted: result.accepted_readings,
+        sent: result.transmitted_bytes,
+        raw: result.uncompressed_bytes,
+        compression: result.compression,
+      });
+      setSyncFeedback(`${result.accepted_readings} readings synced successfully.`);
+    } catch {
+      setEdgeLinkOnline(false);
+      setSyncFeedback('Sync failed. Readings remain saved on this device; try reconnecting again.');
+    } finally {
+      setSyncing(false);
+    }
+  }
 
   return (
     <main className="page-shell">
@@ -117,7 +190,7 @@ export default function App() {
               id="station-select"
               value={stationId}
               onChange={(event) => setStationId(event.target.value)}
-              disabled={stations.length === 0 || busy}
+              disabled={stations.length === 0 || busy || !edgeLinkOnline}
             >
               {stations.map((station) => (
                 <option key={station.station_id} value={station.station_id}>{station.label}</option>
@@ -202,6 +275,39 @@ export default function App() {
           <p className="shipment-note">{inventoryAtRisk ? 'Consider reviewing the shipment plan in this demo scenario.' : 'Estimate uses illustrative demo values; verify real inventory and shipment schedules before acting.'}</p>
         </section>
 
+        <section className="edge-card" aria-label="Station telemetry link and buffer">
+          <div className="edge-heading">
+            <div>
+              <p className="eyebrow">STATION EDGE AGENT</p>
+              <h2>Telemetry link</h2>
+            </div>
+            <span className={`edge-status ${edgeLinkOnline ? 'connected' : 'disconnected'}`}>
+              <span className="edge-status-dot" /> {edgeLinkOnline ? 'LINK CONNECTED' : 'LINK OFFLINE'}
+            </span>
+          </div>
+          <div className="edge-content">
+            <div className="edge-copy">
+              <p>{syncFeedback}</p>
+              {lastSync && <small>Last batch: {lastSync.accepted} readings · {formatBytes(lastSync.sent)} sent of {formatBytes(lastSync.raw)} uncompressed ({lastSync.compression}).</small>}
+            </div>
+            <div className="edge-stats">
+              <div><span>QUEUED READINGS</span><strong>{queuedReadings.length}</strong></div>
+              <div><span>BUFFER SIZE</span><strong>{formatBytes(queuedBytes)}</strong></div>
+            </div>
+            <button
+              className={`button ${edgeLinkOnline ? 'button-outage' : 'button-sync'}`}
+              onClick={edgeLinkOnline && queuedReadings.length === 0 ? () => {
+                setEdgeLinkOnline(false);
+                setSyncFeedback('Link is offline. The edge agent will queue new readings on this device.');
+              } : reconnectAndSync}
+              disabled={syncing || (edgeLinkOnline && loading)}
+            >
+              {syncing ? 'Syncing…' : edgeLinkOnline && queuedReadings.length === 0 ? 'Simulate link outage' : edgeLinkOnline ? `Sync queued (${queuedReadings.length})` : `Reconnect & sync (${queuedReadings.length})`}
+            </button>
+          </div>
+          <p className="edge-note">Offline readings stay in this browser until the link reconnects. Sync sends them as a compressed batch when supported.</p>
+        </section>
+
         <section className={`alert-card ${alertLevel === 'warning' ? 'alert-warning' : ''}`} aria-live="polite">
           <div className="alert-symbol">{alertLevel === 'warning' ? '!' : '✓'}</div>
           <div className="alert-copy">
@@ -219,10 +325,10 @@ export default function App() {
             <p>Explore how changing conditions affect the station. This changes simulated demo values only.</p>
           </div>
           <div className="scenario-actions">
-            <button className={`button button-storm ${isStorm ? 'selected' : ''}`} onClick={() => chooseScenario('storm')} disabled={busy || loading || isStorm}>
+            <button className={`button button-storm ${isStorm ? 'selected' : ''}`} onClick={() => chooseScenario('storm')} disabled={busy || loading || isStorm || !edgeLinkOnline}>
               <span aria-hidden="true">❄</span> {busy ? 'Updating…' : 'Start storm'}
             </button>
-            <button className="button button-reset" onClick={() => chooseScenario('reset')} disabled={busy || loading || !isStorm}>
+            <button className="button button-reset" onClick={() => chooseScenario('reset')} disabled={busy || loading || !isStorm || !edgeLinkOnline}>
               Reset to normal
             </button>
           </div>
@@ -231,7 +337,7 @@ export default function App() {
         <footer className="footer-note">
           <span className="footer-icon">i</span>
           <p><b>Prototype data notice</b><br />All readings are synthetic examples for demonstration. Thresholds are illustrative and are not operational guidance for Maitri, Bharati, or any Antarctic station.</p>
-          <button className="refresh-button" onClick={refresh} aria-label="Refresh readings" title="Refresh readings">↻</button>
+          <button className="refresh-button" onClick={refresh} aria-label="Refresh readings" title="Refresh readings" disabled={!edgeLinkOnline}>↻</button>
         </footer>
       </div>
     </main>
