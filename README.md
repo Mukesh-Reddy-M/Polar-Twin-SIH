@@ -4,7 +4,7 @@ A bandwidth-aware digital twin and remote operations platform concept for India'
 
 **SIH 2026 · Problem Statement 26060 · Theme: Smart Automation**
 
-> Current status: project concept and proposed architecture. The repository is the starting point for the prototype; it does not yet contain a working application. Prototype readings must be labeled as simulated or public-derived and must never be presented as live station telemetry.
+> Current status: first local prototype in progress. It includes a simulated Maitri dashboard, a storm/reset scenario, and a small API. Prototype readings are synthetic examples and must never be presented as live station telemetry.
 
 ## Problem
 Remote station teams need a shared view of infrastructure, energy, logistics, and environmental conditions, even when connectivity is slow or unavailable. Separate dashboards do not show how an environmental event can affect heating demand, fuel use, and inventory risk together.
@@ -51,9 +51,31 @@ docs/
   ROADMAP.md
 ```
 
-## Quick start
+## Run the first prototype locally
 
-Implementation setup is not available yet. Once the first app is added, this section should include exact install, run, test, and demo commands.
+You need Python 3 and Node.js/npm installed. Open two terminals from the repository folder.
+
+**Terminal 1 - API and simulator**
+
+```bash
+cd services/api
+python3 -m venv .venv
+source .venv/bin/activate
+python -m pip install -r requirements.txt
+uvicorn polar_twin.main:app --reload --port 8000
+```
+
+**Terminal 2 - web dashboard**
+
+```bash
+cd apps/web
+npm install
+npm run dev
+```
+
+Open the local address printed by Vite (normally `http://localhost:5173`). Choose **Start storm** to see the simulated values and warning change; choose **Reset to normal** to restore the baseline. The API's interactive page is at `http://localhost:8000/docs`.
+
+The API creates a local SQLite database under `services/api/data/` the first time it runs. The database file is not intended for Git. See [the API notes](services/api/README.md) if setup fails.
 
 ## Data integrity
 

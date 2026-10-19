@@ -24,6 +24,7 @@ coverage/
 
 # Local data and generated artifacts
 *.sqlite3
+*.sqlite
 *.db
 *.log
 reports/generated/
