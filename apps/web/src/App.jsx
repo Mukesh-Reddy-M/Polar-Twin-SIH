@@ -37,12 +37,13 @@ function formatScenarioValue(key, value) {
 }
 
 export default function App() {
+  const isStaticDemo = import.meta.env.VITE_STATIC_DEMO === 'true';
   const [reading, setReading] = useState(null);
-  const [dataMode, setDataMode] = useState('api');
+  const [dataMode, setDataMode] = useState(isStaticDemo ? 'fallback' : 'api');
   const [fallbackScenario, setFallbackScenario] = useState('normal');
   const [stations, setStations] = useState([]);
   const [stationId, setStationId] = useState('maitri-demo');
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(!isStaticDemo);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [reportError, setReportError] = useState('');
@@ -154,6 +155,7 @@ export default function App() {
   }, [stationId, dataMode]);
 
   useEffect(() => {
+    if (isStaticDemo) return;
     fetch('/api/stations')
       .then((response) => {
         if (!response.ok) throw new Error('The station list could not be loaded.');
@@ -161,7 +163,7 @@ export default function App() {
       })
       .then(setStations)
       .catch(() => setError('Cannot load station choices. Check that the local API is running.'));
-  }, []);
+  }, [isStaticDemo]);
 
   useEffect(() => {
     if (dataMode !== 'api') return undefined;
@@ -375,7 +377,7 @@ export default function App() {
             <p className="page-tagline">Explore how simulated weather conditions affect station energy and supply.</p>
           </div>
           <div className="reading-box">
-            <span className="reading-label">LAST API READING</span>
+            <span className="reading-label">{isStaticDemo ? 'SEEDED DEMO SNAPSHOT' : 'LAST API READING'}</span>
             <span className="reading-time">{loading ? 'Loading…' : formatTime(activeReading?.observed_at)}</span>
             <span className="reading-coords">{activeReading?.station_label ?? 'Station profile'} · synthetic data</span>
           </div>
@@ -383,10 +385,10 @@ export default function App() {
 
         {error && <div className="error-banner" role="alert">{error}</div>}
         <section className={`data-mode-panel ${dataMode === 'fallback' ? 'is-fallback' : ''}`} aria-label="Demo data mode">
-          <div><strong>{dataMode === 'fallback' ? 'Seeded offline demo is active' : 'Local API mode is active'}</strong><p>{dataMode === 'fallback' ? 'These named seed states work without the API. They are static examples, were not retrieved live, and are not saved to API workflow or shipment records.' : 'If the API cannot be reached, switch to the seeded demo. The API workflow and the seeded read-only workflow stay separate.'}</p></div>
-          {dataMode === 'fallback'
+          <div><strong>{isStaticDemo ? 'GitHub Pages seeded demo is active' : dataMode === 'fallback' ? 'Seeded offline demo is active' : 'Local API mode is active'}</strong><p>{dataMode === 'fallback' ? 'These named seed states work without the API. They are static examples, were not retrieved live, and are not saved to API workflow or shipment records.' : 'If the API cannot be reached, switch to the seeded demo. The API workflow and the seeded read-only workflow stay separate.'}</p></div>
+          {!isStaticDemo && (dataMode === 'fallback'
             ? <button type="button" className="btn-polar btn-secondary" onClick={returnToApiMode}>Try local API again</button>
-            : <button type="button" className="btn-polar btn-secondary" onClick={selectFallbackMode}>Use seeded offline demo</button>}
+            : <button type="button" className="btn-polar btn-secondary" onClick={selectFallbackMode}>Use seeded offline demo</button>)}
         </section>
 
         <section className="antarctic-hero-card" aria-label="Selected Antarctic station">
