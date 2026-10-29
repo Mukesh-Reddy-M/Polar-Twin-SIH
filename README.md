@@ -4,7 +4,7 @@ A bandwidth-aware digital twin and remote operations platform concept for India'
 
 **SIH 2026 · Problem Statement 26060 · Theme: Smart Automation**
 
-> Current status: first local prototype in progress. It includes selectable simulated Maitri and Bharati profiles, station-specific storm/reset scenarios, a fuel stock-out versus shipment ETA outlook, and a local edge-buffer demo that compresses and syncs readings after reconnect. Prototype readings are synthetic examples and must never be presented as live station telemetry.
+> Current status: Phases 0–5 of the local MVP are implemented. It includes selectable synthetic Maitri and Bharati profiles, storm/reset controls, generator-fault and delayed-shipment what-ifs, persisted explainable alerts with hysteresis, a component-based station health score, an API-backed SQLite requisition workflow, a shipment-versus-stockout outlook, an interactive 3D schematic with an accessible zone list, an offline edge-buffer demo, CSV/PDF reports, and a seeded offline fallback. Values are synthetic/demo inputs and must never be presented as live station telemetry.
 
 ## Problem
 Remote station teams need a shared view of infrastructure, energy, logistics, and environmental conditions, even when connectivity is slow or unavailable. Separate dashboards do not show how an environmental event can affect heating demand, fuel use, and inventory risk together.
@@ -14,68 +14,66 @@ Polar Twin models each station's operational state, connects related signals, an
 
 ## MVP
 
-- Station profiles for Maitri and Bharati, with a 2D station view.
+- Station profiles for Maitri and Bharati with an interactive schematic 3D station view and selectable text/list alternative.
 - Simulated environment, energy, infrastructure, and inventory readings with clear provenance labels.
 - Offline edge-agent simulation: buffer, compress, batch, and synchronize.
 - Explainable Normal / Warning / Critical alerts with hysteresis and minimum-duration rules.
-- Station health score with a component breakdown and reasons for changes.
-- Requisition, approval, dispatch, and delivery workflow.
+- Station health score with energy, infrastructure, inventory, and environment components and reasons for changes.
+- SQLite-backed requisition, review, decision, dispatch, ETA update, delivery, close, and append-only history workflow. Demo role views are not authentication.
 - Stock-out estimate compared with shipment ETA.
-- At least two safe what-if scenarios, such as a generator fault during a storm and a delayed shipment.
+- Generator-fault-during-storm and delayed-shipment what-if scenarios with illustrative effect explanations.
 - Role-specific views for Station Leader, Logistics, and Management.
 - CSV/PDF report and an offline demo fallback.
 
-See the [three-person first-prototype plan](docs/PROTOTYPE_PLAN.md), [build plan](docs/ROADMAP.md), and [architecture notes](docs/ARCHITECTURE.md).
+See the [three-person first-prototype plan](docs/PROTOTYPE_PLAN.md), [build plan](docs/ROADMAP.md), [architecture notes](docs/ARCHITECTURE.md), [requisition API contract](docs/REQUISITION_API.md), [scenario API notes](docs/SCENARIO_API.md), [alert thresholds and health formula](docs/ALERTS_HEALTH.md), and [station twin integration and zone mappings](docs/STATION_TWIN.md).
 
-## Proposed technology
+Phase 5 report contents, provenance rules, fallback seed states, mode switching, and the short recording checklist are in [Reports and offline demo mode](docs/REPORTS_OFFLINE_DEMO.md).
 
-- **Web:** React, Vite, TypeScript, Tailwind CSS, Recharts, Leaflet
-- **API:** choose one for the MVP: Python FastAPI (recommended if the simulator is Python) or Node.js/Express
-- **Simulator:** Python, NumPy, pandas
-- **Storage:** PostgreSQL; add TimescaleDB only if time-series query needs justify it
-- **Updates:** start with polling; add SSE/WebSocket only when the demo needs it
-- **Delivery:** Docker; deploy only after the local demo is stable
+## Implemented stack
 
-The stack is a proposal, not an implementation commitment. Keep the first version small and document any decision that changes it.
+- **Web:** React with JavaScript, Vite, CSS, and Three.js for the schematic station twin.
+- **API:** Python FastAPI.
+- **Simulator:** fixed synthetic Python station profiles and scenario calculations; no NumPy/pandas or random sensor generator is required.
+- **Storage:** SQLite for local readings, scenario state, alert/health assessment state, requisitions, and workflow events. The browser stores the separate telemetry queue in local storage.
+- **Updates:** the dashboard polls the local API; the offline telemetry demo batches and gzip-compresses browser-buffered readings before sync.
+- **Run/test:** project shell script, pytest for backend coverage, and npm/Vite production build. GitHub Actions runs these checks.
+
+There is no live station integration, authentication, deployment stack, or PostgreSQL service in the current MVP. The 3D model is a generic schematic; values and thresholds are illustrative demo content.
 
 ## Repository layout
 
 ```text
 apps/
-  web/                 # station, logistics, and management interface
+  web/                 # React/Vite dashboard and Three.js schematic
 services/
-  api/                 # ingestion and operational API
-  simulator/           # correlated synthetic data and scenario events
+  api/
+    polar_twin/        # FastAPI app and deterministic simulator
+    tests/             # pytest-discovered backend/API coverage
+scripts/
+  run-local.sh         # start API and web app together
+docs/                  # API contracts, assumptions, and demo handoff
 docs/
   ARCHITECTURE.md
   ROADMAP.md
 ```
 
-## Run the first prototype locally
+## Run locally
 
-You need Python 3 and Node.js/npm installed. Open two terminals from the repository folder.
-
-**Terminal 1 - API and simulator**
+Prerequisites: Python 3.9+, Node.js 20.19+ or 22.12+, npm, and network access for the first dependency install. From the repository root run:
 
 ```bash
-cd services/api
-python3 -m venv .venv
-source .venv/bin/activate
-python -m pip install -r requirements.txt
-uvicorn polar_twin.main:app --reload --port 8000
+./scripts/run-local.sh
 ```
 
-**Terminal 2 - web dashboard**
+The script creates `services/api/.venv` if needed, installs API and pytest dependencies, installs locked web dependencies when `node_modules` is absent, then starts both services. Open the web dashboard at `http://localhost:5173`; the API and interactive docs are at `http://localhost:8000` and `http://localhost:8000/docs`. Press **Ctrl+C** in that terminal to stop both services. Ports 5173 and 8000 must be available.
 
-```bash
-cd apps/web
-npm install
-npm run dev
-```
+The script can be run again after setup; local API data stays in `services/api/data/prototype.sqlite3` and is not committed. It also installs pytest into the API virtual environment. Run backend tests with `PYTHONPATH=services/api services/api/.venv/bin/python -m pytest -q services/api/tests` and the fixed-input simulator check with `python3 services/api/scripts/check_simulator_repeatability.py`.
 
-Open the local address printed by Vite (normally `http://localhost:5173`). Choose Maitri or Bharati, then **Start storm** to see that station’s simulated values and warning change; choose **Reset to normal** to restore that station’s baseline. To demo offline sync, choose **Simulate link outage**, wait for a few readings to queue, then choose **Reconnect & sync**. The API's interactive page is at `http://localhost:8000/docs`.
+Choose Maitri or Bharati, then start a storm or run one of the two what-if scenarios. In the workflow panel, create a request as Station Leader, switch to Logistics to review and dispatch, switch to Management to decide, then switch back to confirm delivery/close. Dispatch and ETA changes feed the shipment outlook. The role selector is a demo view, not authentication. For the separate telemetry sync demo, choose **Simulate link outage**, wait for readings to queue in this browser, then choose **Reconnect & sync**. If the API cannot load, use the clearly labeled **Seeded offline demo** mode; that data is read-only and never presented as retrieved or persisted by the API.
 
-The API creates a local SQLite database under `services/api/data/` the first time it runs. The database file is not intended for Git. See [the API notes](services/api/README.md) if setup fails.
+The alert and health summary are derived from the active synthetic station profile and scenario. The dashboard refreshes every two seconds so the 10-second alert promotion and 20-second recovery timers can be observed. The station twin is a schematic 3D model with orbit/zoom, selectable zones, and a non-3D list view; zone details only use data the API provides. Exact zone mappings and the model's demo limitations are documented in [STATION_TWIN.md](docs/STATION_TWIN.md). Alert thresholds and the four equally weighted score calculations are documented in [ALERTS_HEALTH.md](docs/ALERTS_HEALTH.md); none are operational guidance. Use the dashboard's report controls to export the current state as CSV or print/save it as PDF. If the API cannot load, use **Seeded offline demo** to inspect normal, storm, generator-fault, or delayed-shipment examples; this state is read-only and never synced to the API. The existing telemetry buffer remains a separate API-mode demo.
+
+Read the [Phase 5 report/fallback guide](docs/REPORTS_OFFLINE_DEMO.md) and the [Phase 6 clean-start rehearsal checklist](docs/DEMO_HANDOFF.md) before presenting. Remaining demo limitations and run commands are listed in [the build roadmap](docs/ROADMAP.md).
 
 ## Data integrity
 

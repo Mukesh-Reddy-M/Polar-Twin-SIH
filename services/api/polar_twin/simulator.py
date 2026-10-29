@@ -1,6 +1,15 @@
 """Small, deterministic scenario model for the first Polar Twin prototype."""
 
 from datetime import datetime, timedelta, timezone
+from math import ceil
+from typing import Optional
+
+GENERATOR_FAULT_DEFAULTS = {
+    "generation_available_percent": 40,
+    "constrained_power_threshold_percent": 60,
+    "backup_fuel_demand_increase_per_lost_fraction": 0.5,
+    "backup_heating_load_increase_fraction": 0.25,
+}
 
 STATIONS = {
     "maitri-demo": {
@@ -82,11 +91,21 @@ def fuel_outlook(
     }
 
 
-def make_reading(station_id: str = "maitri-demo", storm_active: bool = False) -> dict:
-    """Return illustrative synthetic readings for one demo station."""
+def make_reading(
+    station_id: str = "maitri-demo",
+    storm_active: bool = False,
+    observed_at: Optional[datetime] = None,
+    seed: Optional[int] = None,
+) -> dict:
+    """Return illustrative synthetic readings for one demo station.
+
+    Profiles currently use fixed lookup values rather than random sampling.
+    ``seed`` is carried as run metadata so fixed-input runs can be identified
+    and compared; it does not add variation to the current deterministic model.
+    """
     station = station_profile(station_id)
     values = station["storm" if storm_active else "baseline"]
-    observed_at = datetime.now(timezone.utc)
+    observed_at = observed_at or datetime.now(timezone.utc)
     stockout_days = values["fuel_stockout_days"]
     shipment_eta_days = values["shipment_eta_days"]
 
@@ -101,7 +120,7 @@ def make_reading(station_id: str = "maitri-demo", storm_active: bool = False) ->
     else:
         alert = {"level": "normal", "reason": "No active demo warning."}
 
-    return {
+    reading = {
         "station_id": station_id,
         "station_label": station["label"],
         "station_name": station["station_name"],
@@ -118,6 +137,11 @@ def make_reading(station_id: str = "maitri-demo", storm_active: bool = False) ->
             "fuel_percent": values["fuel_percent"],
         },
         "alert": alert,
+        "power": {
+            "status": "steady",
+            "available_generation_percent": 100,
+            "backup_generation_active": False,
+        },
         "inventory": fuel_outlook(stockout_days, shipment_eta_days, observed_at),
         "assumptions": [
             "All values are illustrative synthetic demo values.",
@@ -125,3 +149,124 @@ def make_reading(station_id: str = "maitri-demo", storm_active: bool = False) ->
             "Alert thresholds are examples and are not operational guidance.",
         ],
     }
+    if seed is not None:
+        reading["simulation_seed"] = seed
+    return reading
+
+
+def apply_generator_fault(reading: dict, generation_available_percent: int = 40) -> dict:
+    """Apply a repeatable synthetic generator fault to an elevated-storm reading."""
+    if not 0 <= generation_available_percent <= 100:
+        raise ValueError("Generation availability must be from 0 to 100 percent")
+    if reading.get("scenario") != "storm":
+        raise ValueError("Generator fault scenario requires an active storm profile")
+
+    result = {**reading, "energy": dict(reading["energy"]), "inventory": dict(reading["inventory"])}
+    inputs = {
+        "storm_severity_percent": round(reading["weather"]["storm_severity"] * 100),
+        "generation_available_percent": generation_available_percent,
+        "constrained_power_threshold_percent": GENERATOR_FAULT_DEFAULTS["constrained_power_threshold_percent"],
+        "backup_fuel_demand_increase_per_lost_fraction": GENERATOR_FAULT_DEFAULTS["backup_fuel_demand_increase_per_lost_fraction"],
+        "backup_heating_load_increase_fraction": GENERATOR_FAULT_DEFAULTS["backup_heating_load_increase_fraction"],
+    }
+    lost_generation_fraction = 1 - generation_available_percent / 100
+    fuel_demand_multiplier = 1 + lost_generation_fraction * GENERATOR_FAULT_DEFAULTS[
+        "backup_fuel_demand_increase_per_lost_fraction"
+    ]
+    base_heating_load_kw = reading["energy"]["heating_load_kw"]
+    backup_load_kw = ceil(
+        base_heating_load_kw * lost_generation_fraction * GENERATOR_FAULT_DEFAULTS[
+            "backup_heating_load_increase_fraction"
+        ]
+    )
+    result["energy"].update({
+        "heating_load_kw": base_heating_load_kw + backup_load_kw,
+        "storm_heating_load_kw": base_heating_load_kw,
+        "backup_load_kw": backup_load_kw,
+        "fuel_demand_multiplier": round(fuel_demand_multiplier, 2),
+    })
+    result["power"] = {
+        "status": "constrained" if generation_available_percent < inputs["constrained_power_threshold_percent"] else "steady",
+        "available_generation_percent": generation_available_percent,
+        "backup_generation_active": generation_available_percent < 100,
+        "illustrative_threshold_percent": inputs["constrained_power_threshold_percent"],
+    }
+    original_stockout_days = reading["inventory"]["stockout_in_days"]
+    adjusted_stockout_days = ceil(original_stockout_days / fuel_demand_multiplier)
+    result["inventory"] = fuel_outlook(
+        adjusted_stockout_days,
+        reading["inventory"]["shipment_eta_in_days"],
+        datetime.fromisoformat(reading["observed_at"].replace("Z", "+00:00")),
+    )
+    result["what_if_scenario"] = {
+        "id": "generator_fault_during_storm",
+        "title": "Generator fault during storm",
+        "provenance": "simulated_what_if",
+        "inputs": inputs,
+        "effects": {
+            "power_status": result["power"]["status"],
+            "backup_generation_active": result["power"]["backup_generation_active"],
+            "storm_heating_load_kw": base_heating_load_kw,
+            "heating_load_kw": result["energy"]["heating_load_kw"],
+            "fuel_demand_multiplier": result["energy"]["fuel_demand_multiplier"],
+            "stockout_days_before_fault": original_stockout_days,
+            "stockout_days_after_fault": adjusted_stockout_days,
+        },
+        "explanation": (
+            "The storm profile stays active. Reduced generation adds an illustrative backup load, "
+            "raises modeled fuel demand, and shortens the synthetic stock-out estimate."
+        ),
+    }
+    result["assumptions"] = list(reading.get("assumptions", [])) + [
+        "Generator availability, backup load, fuel-demand multiplier, and constrained-power threshold are illustrative scenario inputs, not station measurements."
+    ]
+    return result
+
+
+def apply_delayed_shipment(reading: dict, delay_days: int = 10) -> dict:
+    """Move the current synthetic shipment ETA later without editing requisitions."""
+    if not 1 <= delay_days <= 90:
+        raise ValueError("Shipment delay must be from 1 to 90 days")
+    result = {**reading, "inventory": dict(reading["inventory"])}
+    inventory = reading["inventory"]
+    eta_before_days = inventory["shipment_eta_in_days"]
+    calculated_at = datetime.fromisoformat(
+        inventory.get("calculated_at", reading["observed_at"]).replace("Z", "+00:00")
+    )
+    current_eta_at = inventory.get("shipment_eta_at")
+    if current_eta_at:
+        current_eta_at = datetime.fromisoformat(current_eta_at.replace("Z", "+00:00"))
+    else:
+        current_eta_at = calculated_at + timedelta(days=eta_before_days)
+    scenario_eta_at = current_eta_at + timedelta(days=delay_days)
+    eta_after_days = max(0, ceil((scenario_eta_at - calculated_at).total_seconds() / 86400))
+    result["inventory"] = fuel_outlook(
+        inventory["stockout_in_days"], eta_after_days, calculated_at
+    )
+    result["inventory"]["eta_source"] = "delayed_shipment_scenario"
+    result["inventory"]["shipment_eta_at"] = scenario_eta_at.isoformat()
+    result["inventory"]["calculated_at"] = calculated_at.isoformat()
+    result["what_if_scenario"] = {
+        "id": "delayed_shipment",
+        "title": "Delayed shipment",
+        "provenance": "simulated_what_if",
+        "inputs": {
+            "baseline_eta_in_days": eta_before_days,
+            "delay_days": delay_days,
+            "scenario_eta_in_days": eta_after_days,
+        },
+        "effects": {
+            "stockout_in_days": result["inventory"]["stockout_in_days"],
+            "arrival_buffer_days": result["inventory"]["arrival_buffer_days"],
+            "shortfall_days": result["inventory"]["shortfall_days"],
+            "outlook_status": result["inventory"]["status"],
+        },
+        "explanation": (
+            f"The shipment ETA is shifted {delay_days} illustrative days later for this what-if only. "
+            "The requisition ETA and its workflow history are unchanged."
+        ),
+    }
+    result["assumptions"] = list(reading.get("assumptions", [])) + [
+        "Shipment delay is a synthetic what-if input and does not change a dispatched requisition or verified delivery schedule."
+    ]
+    return result

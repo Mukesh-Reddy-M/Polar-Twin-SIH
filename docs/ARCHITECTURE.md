@@ -1,17 +1,15 @@
-# Architecture: initial proposal
+# Architecture: current local prototype
 
 ```text
-Public-derived inputs / simulator
+Fixed synthetic station profiles and simulator
               ↓
      Station edge agent
  (buffer locally → gzip batch → sync on reconnect)
               ↓
-         Ingestion API
- (validate → label provenance)
-              ↓
- PostgreSQL operational store
-              ↓
- Twin state + rules + forecasts
+       FastAPI API
+(validate → persist → derive)
+               ↓
+ SQLite local prototype store
               ↓
  Web views: station / logistics / management
 ```
@@ -20,7 +18,15 @@ Public-derived inputs / simulator
 
 - The simulator and any later sensor adapter use the same ingestion contract.
 - The browser-based edge demo stores readings locally while the simulated link is offline, then sends them as a gzip batch on reconnect. The API validates station IDs and required reading metadata before storing the batch.
-- The API rejects invalid units, missing provenance, and out-of-range data rather than silently accepting it.
+- SQLite stores synthetic telemetry readings, requisition current state, and requisition events in the local prototype. The requisition API owns and validates transitions; each state change and ETA update is recorded in its append-only event history.
+- The role selector labels demo actions as Station Leader, Logistics, or Management. The API checks these labels against workflow transitions, but they are not authenticated identities or a security boundary.
+- The current station response uses the latest dispatched requisition ETA for its existing fuel stock-out comparison. Other reading values and the stock-out estimate remain synthetic illustrations.
+- Per-station what-if parameters are stored in `active_scenarios` separately from requisitions. Generator-fault and delayed-shipment overlays are recomputed for station responses and never write to requisition state or event history.
+- Normal/Warning/Critical alert timers and the previous station-health component scores are stored separately in `station_assessments`. Each API assessment uses the final active profile/scenario/shipment overlay; these derived values do not change workflow or ETA records. Their illustrative rules are in [ALERTS_HEALTH.md](ALERTS_HEALTH.md).
+- The dashboard's Three.js view reuses the supplied Apache-2.0 schematic geometry and maps only API-backed values to zones. Unsupported areas remain explicitly unknown; a selectable text list is available if WebGL fails or is not preferred. The scene is fed by the existing dashboard state and does not own scenario controls. See [STATION_TWIN.md](STATION_TWIN.md) for zone mappings and cleanup/fallback behavior.
+- Browser-side CSV and print-to-PDF reports serialize the currently selected station, scenario, API response, and available workflow history. Their rows include units, provenance, and assumption notes; missing API fields are not inferred. The browser print dialog provides PDF output without a new PDF dependency.
+- The seeded offline demo is a separate, read-only client mode with four labeled states. Its synthetic readings and representative workflow are not retrieved from or persisted by the API, and are never added to the telemetry queue. The pre-existing edge buffer/reconnect flow remains independently available in API mode. See [REPORTS_OFFLINE_DEMO.md](REPORTS_OFFLINE_DEMO.md).
+- Requisition/scenario bodies use FastAPI/Pydantic field validation. The telemetry sync endpoint currently requires a known station, an observation timestamp, and a non-empty provenance string; it does not yet validate individual metric units/ranges, deduplicate records, or reject stale timestamps.
 - The twin derives state from recorded inputs. Scenarios run on a copy and can be reset.
 - Alerts provide an explanation and source readings; critical actions remain subject to human approval.
 
@@ -34,7 +40,7 @@ Public-derived inputs / simulator
 - `Shipment`: items, dispatch/ETA/delivery state, and timestamps.
 - `ScenarioRun`: scenario type, input snapshot, parameters, simulated outputs, and reset state.
 
-These are conceptual entities; finalize field names and relationships in the data dictionary before implementation.
+The current `requisitions` and `requisition_events` tables are SQLite prototype records. The field-level API contract and current states are documented in [REQUISITION_API.md](REQUISITION_API.md). Scenario inputs are separately stored in SQLite `active_scenarios`; their synthetic effects are returned with the reading. Alerts and inventory remain synthetic reading payloads. See [SCENARIO_API.md](SCENARIO_API.md) for inputs and calculation assumptions.
 
 ## Provenance values
 
@@ -47,4 +53,4 @@ The UI should show provenance wherever a value can inform an operational decisio
 
 ## Initial engineering choices
 
-Use FastAPI for API and simulator integration unless the team has stronger Node.js experience. Start with PostgreSQL and ordinary timestamped tables; add TimescaleDB only after measuring a need. Use polling for the first demo and add streaming only if the experience requires it. Keep deployment optional until a reproducible local demo exists.
+FastAPI and SQLite are the current local prototype choice so the team can run the workflow without a database service. Reassess PostgreSQL only if shared/deployed use requires it. Use polling for the first demo and add streaming only if the experience requires it. Keep deployment optional until a reproducible local demo exists.
