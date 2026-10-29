@@ -4,7 +4,13 @@ A bandwidth-aware digital twin and remote operations platform concept for India'
 
 **SIH 2026 · Problem Statement 26060 · Theme: Smart Automation**
 
-> Current status: Phases 0–5 of the local MVP are implemented. It includes selectable synthetic Maitri and Bharati profiles, storm/reset controls, generator-fault and delayed-shipment what-ifs, persisted explainable alerts with hysteresis, a component-based station health score, an API-backed SQLite requisition workflow, a shipment-versus-stockout outlook, an interactive 3D schematic with an accessible zone list, an offline edge-buffer demo, CSV/PDF reports, and a seeded offline fallback. Values are synthetic/demo inputs and must never be presented as live station telemetry.
+## Live demo
+
+**[Open PolarTwin on GitHub Pages](https://mukesh-reddy-m.github.io/Polar-Twin-SIH/)**
+
+The published site is a static frontend and opens in seeded demo mode. It includes sample Maitri/Bharati station profiles, selectable scenarios, the schematic 3D view, reports, and a read-only example requisition history. It does not connect to live station telemetry or host the FastAPI/SQLite backend. To use the API-backed requisition workflow and telemetry sync demo, [run the project locally](#run-locally).
+
+> Current status: Phases 0–6 of the MVP are implemented. It includes selectable synthetic Maitri and Bharati profiles, storm/reset controls, generator-fault and delayed-shipment what-ifs, persisted explainable alerts with hysteresis, a component-based station health score, an API-backed SQLite requisition workflow, a shipment-versus-stockout outlook, an interactive 3D schematic with an accessible zone list, an offline edge-buffer demo, CSV/PDF reports, a seeded offline fallback, and GitHub Pages publishing for the frontend. Values are synthetic/demo inputs and must never be presented as live station telemetry.
 
 ## Problem
 Remote station teams need a shared view of infrastructure, energy, logistics, and environmental conditions, even when connectivity is slow or unavailable. Separate dashboards do not show how an environmental event can affect heating demand, fuel use, and inventory risk together.
@@ -38,7 +44,7 @@ Phase 5 report contents, provenance rules, fallback seed states, mode switching,
 - **Updates:** the dashboard polls the local API; the offline telemetry demo batches and gzip-compresses browser-buffered readings before sync.
 - **Run/test:** project shell script, pytest for backend coverage, and npm/Vite production build. GitHub Actions runs these checks.
 
-There is no live station integration, authentication, deployment stack, or PostgreSQL service in the current MVP. The 3D model is a generic schematic; values and thresholds are illustrative demo content.
+There is no live station integration, real authentication, hosted API/database, or PostgreSQL service in the current MVP. GitHub Pages hosts only the static seeded frontend demo; the API-backed workflow runs locally. The 3D model is a generic schematic, and values and thresholds are illustrative demo content.
 
 ## Repository layout
 
@@ -70,6 +76,10 @@ The script creates `services/api/.venv` if needed, installs API and pytest depen
 The script can be run again after setup; local API data stays in `services/api/data/prototype.sqlite3` and is not committed. It also installs pytest into the API virtual environment. Run backend tests with `PYTHONPATH=services/api services/api/.venv/bin/python -m pytest -q services/api/tests` and the fixed-input simulator check with `python3 services/api/scripts/check_simulator_repeatability.py`.
 
 Choose Maitri or Bharati, then start a storm or run one of the two what-if scenarios. In the workflow panel, create a request as Station Leader, switch to Logistics to review and dispatch, switch to Management to decide, then switch back to confirm delivery/close. Dispatch and ETA changes feed the shipment outlook. The role selector is a demo view, not authentication. For the separate telemetry sync demo, choose **Simulate link outage**, wait for readings to queue in this browser, then choose **Reconnect & sync**. If the API cannot load, use the clearly labeled **Seeded offline demo** mode; that data is read-only and never presented as retrieved or persisted by the API.
+
+## GitHub Pages deployment
+
+The deployment workflow in `.github/workflows/ci.yml` builds and publishes the seeded static frontend after the checks pass on `main`. GitHub Pages does not host the FastAPI service or SQLite database. To publish a later update, push changes to `main`; the workflow will deploy them automatically after successful checks. See [GitHub's custom workflow guide](https://docs.github.com/en/pages/getting-started-with-github-pages/using-custom-workflows-with-github-pages) for details about Pages publishing.
 
 The alert and health summary are derived from the active synthetic station profile and scenario. The dashboard refreshes every two seconds so the 10-second alert promotion and 20-second recovery timers can be observed. The station twin is a schematic 3D model with orbit/zoom, selectable zones, and a non-3D list view; zone details only use data the API provides. Exact zone mappings and the model's demo limitations are documented in [STATION_TWIN.md](docs/STATION_TWIN.md). Alert thresholds and the four equally weighted score calculations are documented in [ALERTS_HEALTH.md](docs/ALERTS_HEALTH.md); none are operational guidance. Use the dashboard's report controls to export the current state as CSV or print/save it as PDF. If the API cannot load, use **Seeded offline demo** to inspect normal, storm, generator-fault, or delayed-shipment examples; this state is read-only and never synced to the API. The existing telemetry buffer remains a separate API-mode demo.
 
